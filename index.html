@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roguelike Game</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="display">
+      <div id="startBox">
+        <p>Hello Stranger!</p>
+        <p>Please introduce yourself...</p>
+        <p>Then you can start to explore the dungeon with WASD keys!</p>
+        <input
+          type="text"
+          id="playerName"
+          placeholder="Type your name please..."
+        />
+        <select id="playerRace">
+          <option>Elf</option>
+          <option>Human</option>
+          <option>Dwarf</option>
+        </select>
+        <button onclick="_start(moveAll)">START</button>
+      </div>
+      <div id="endBox" class="is-hidden">
+        Game over!
+        <button onclick="_restart(moveAll)">Restart</button>
+      </div>
+
+      <div id="playerStats"></div>
+      <div id="enemyStats"></div>
+      <pre id="screen"></pre>
+    </div>
+    <script src="./index.js"></script>
+  </body>
+</html>
