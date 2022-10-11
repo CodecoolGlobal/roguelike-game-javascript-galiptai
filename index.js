@@ -172,12 +172,22 @@ function moveAll(yDiff, xDiff) {
  * @returns
  */
 function move(who, yDiff, xDiff) {
-  who.x += xDiff;
-  who.y += yDiff;
-  GAME.board[who.y][who.x] = who.icon;
   // ... check if move to empty space
-  // ... check if hit a wall
-  // ... check if move to new room (`removeFromBoard`, `addToBoard`)
+  if (GAME.board[who.y + yDiff][who.x + xDiff] === c.emptySpace) {
+    GAME.board[who.y][who.x] = c.emptySpace;
+    who.x += xDiff;
+    who.y += yDiff;
+    GAME.board[who.y][who.x] = who.icon;
+  } else if (GAME.board[who.y + yDiff][who.x + xDiff] === c.wall) {
+    // ... check if hit a wall
+    return;
+  } else if (
+    GAME.board[who.y + yDiff][who.x + xDiff] === c.gateHorizontal ||
+    GAME.board[who.y + yDiff][who.x + xDiff] === c.gateVertical
+  ) {
+    // ... check if move to new room (`removeFromBoard`, `addToBoard`)
+    console.log('leave Room');
+  }
   // ... check if attack enemy
   // ... check if attack player
   //     ... use `_gameOver()` if necessary
@@ -344,6 +354,7 @@ function _start(moveCB) {
     }
   };
   document.addEventListener('keypress', _keypressListener);
+  drawScreen();
 }
 
 /**
