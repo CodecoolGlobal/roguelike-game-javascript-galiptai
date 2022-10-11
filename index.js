@@ -122,10 +122,9 @@ function generateMap() {
  * @param {*} board the gameplay area
  */
 function displayBoard(board) {
-  const screen = '';
+  let screen = '';
   for (const row of board) {
-    screen.concat(row.join(''));
-    screen.concat('\n');
+    screen = screen.concat(row.join(''), '\n');
   }
   _displayBoard(screen);
 }
