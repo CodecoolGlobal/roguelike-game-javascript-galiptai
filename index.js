@@ -97,7 +97,7 @@ function generateMap() {
     [ROOM.A]: {
       layout: [10, 10, 20, 20],
       gates: [
-        { to: ROOM.B, x: 20, y: 15, icon: c.gateVertical, playerStart: { x: 11, y: 11 } },
+        { to: ROOM.B, x: 20, y: 15, icon: c.gateVertical, playerStart: { x: 7, y: 15 } },
         // { to: ROOM.B, x: 10, y: 18, icon: c.gateVertical, playerStart: { x: 19, y: 11 } },
         // { to: ROOM.B, x: 13, y: 20, icon: c.gateHorizontal, playerStart: { x: 19, y: 11 } },
       ],
@@ -106,9 +106,7 @@ function generateMap() {
     },
     [ROOM.B]: {
       layout: [13, 6, 17, 70],
-      gates: [
-        // { to: ROOM.A, x: 6, y: 15, icon: c.gateHorizontal, playerStart: { x: 19, y: 15 } },
-      ],
+      gates: [{ to: ROOM.A, x: 6, y: 15, icon: c.gateVertical, playerStart: { x: 19, y: 15 } }],
       enemies: [
         // { type: ENEMY.RAT, x: 25, y: 15, name: "Rattata", ...ENEMY_INFO[ENEMY.RAT] },
       ],
@@ -134,7 +132,7 @@ function displayBoard(board) {
  */
 function drawScreen() {
   // ... reset the board with `createBoard`
-  createBoard(c.boardWidth, c.boardHeight, c.emptySpace);
+  GAME.board = createBoard(c.boardWidth, c.boardHeight, c.emptySpace);
   // ... use `drawRoom`
   drawRoom(GAME.board, ...GAME.map[GAME.currentRoom].layout);
   // ... print entities with `addToBoard`
@@ -186,8 +184,15 @@ function move(who, yDiff, xDiff) {
     GAME.board[who.y + yDiff][who.x + xDiff] === c.gateVertical
   ) {
     // ... check if move to new room (`removeFromBoard`, `addToBoard`)
-    GAME.currentRoom = ROOM.B;
-    removeFromBoard(GAME.board, GAME.player);
+    for (const door of GAME.map[GAME.currentRoom].gates) {
+      if (who.y + yDiff === door.y && who.x + xDiff === door.x) {
+        GAME.currentRoom = door.to;
+        removeFromBoard(GAME.board, GAME.player);
+        addToBoard(GAME.board, door.playerStart, GAME.player.icon);
+        GAME.player.x = door.playerStart.x;
+        GAME.player.y = door.playerStart.y;
+      }
+    }
     console.log('leave Room');
   }
   // ... check if attack enemy
