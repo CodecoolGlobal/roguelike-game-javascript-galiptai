@@ -86,7 +86,7 @@ function init() {
   GAME.map = generateMap();
   GAME.board = createBoard(c.boardWidth, c.boardHeight, c.emptySpace);
   GAME.player = initPlayer('Legolas', 'Elf');
-  drawScreen();
+  // drawScreen();
 }
 
 /**
@@ -98,8 +98,8 @@ function generateMap() {
       layout: [10, 10, 20, 20],
       gates: [
         { to: ROOM.B, x: 20, y: 15, icon: c.gateVertical, playerStart: { x: 11, y: 11 } },
-        { to: ROOM.B, x: 10, y: 18, icon: c.gateVertical, playerStart: { x: 19, y: 11 } },
-        { to: ROOM.B, x: 13, y: 20, icon: c.gateHorizontal, playerStart: { x: 19, y: 11 } },
+        // { to: ROOM.B, x: 10, y: 18, icon: c.gateVertical, playerStart: { x: 19, y: 11 } },
+        // { to: ROOM.B, x: 13, y: 20, icon: c.gateHorizontal, playerStart: { x: 19, y: 11 } },
       ],
       enemies: [],
       items: [],
@@ -253,9 +253,8 @@ function drawRoom(board, topY, leftX, bottomY, rightX) {
       }
     }
   }
-  const randomGate = Math.floor(Math.random() * 3);
-  board[GAME.map[GAME.currentRoom].gates[randomGate].y][GAME.map[GAME.currentRoom].gates[randomGate].x] =
-    GAME.map[GAME.currentRoom].gates[randomGate].icon;
+  board[GAME.map[GAME.currentRoom].gates[0].y][GAME.map[GAME.currentRoom].gates[0].x] =
+    GAME.map[GAME.currentRoom].gates[0].icon;
   console.dir(board);
 }
 
