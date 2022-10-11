@@ -1,69 +1,76 @@
 body {
-    background-color: gray;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100vh;
-    min-width: 600px;
-    min-height: 500px;
-    font-family: monospace;
-    font-size: 14px;
-    margin: 0;
-    padding: 0;
+  background-color: gray;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  min-width: 600px;
+  min-height: 500px;
+  font-family: monospace;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
 }
 
 #display {
-    position: absolute;
-    width: 700px;
-    height: 420px;
-    border-radius: 30px;
-    border: 30px solid #333333;
-    background-color: black;
-    overflow: hidden;
+  position: absolute;
+  width: 700px;
+  height: 420px;
+  border-radius: 30px;
+  border: 30px solid #333333;
+  background-color: black;
+  overflow: hidden;
 }
 
 #screen {
-    color: #27b432;
-    margin: 10px;
+  color: #27b432;
+  margin: 10px;
 }
 
 #startBox {
-    position: absolute;
-    width: 100%;
-    margin: 10px;
-    color: greenyellow;
-    inset: 0;
-    text-align: center;
+  position: absolute;
+  width: 100%;
+  margin: 10px;
+  color: greenyellow;
+  inset: 0;
+  text-align: center;
 }
 
 #endBox {
-    position: absolute;
-    width: 100%;
-    margin: 10px;
-    padding: 50px;
-    color: greenyellow;
-    inset: 0;
-    text-align: center;
+  position: absolute;
+  width: 100%;
+  margin: 10px;
+  padding: 50px;
+  color: greenyellow;
+  inset: 0;
+  text-align: center;
 }
 
 #playerStats {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    color: turquoise;
-    opacity: 0.5;
-    margin: 10px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  color: turquoise;
+  opacity: 0.5;
+  margin: 10px;
 }
 #enemyStats {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    color: red;
-    opacity: 0.5;
-    margin: 10px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  color: red;
+  opacity: 0.5;
+  margin: 10px;
 }
 
 .is-hidden {
-    display: none;
+  display: none;
+}
+
+#inventory {
+  position: absolute;
+  z-index: 1;
+  color: white;
+  border: 1px solid #27b432;
 }

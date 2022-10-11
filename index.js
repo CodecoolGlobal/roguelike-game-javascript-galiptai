@@ -40,6 +40,7 @@ function initPlayer(name, race) {
     attack: 1,
     defense: 1,
     isPlayer: true,
+    inventory: {},
   };
 }
 
@@ -78,6 +79,10 @@ const ENEMY_INFO = {
   // [ENEMY.RAT]: { health: 10, attack: 1, defense: 0, icon: ENEMY.RAT, race: "Rat", isBoss: false },
 };
 
+const ITEMS = {
+  food: { name: 'food', type: 'pickup', effects: [['health', 10]] },
+};
+
 /**
  * Initialize the play area with starting conditions
  */
@@ -102,7 +107,10 @@ function generateMap() {
         // { to: ROOM.B, x: 13, y: 20, icon: c.gateHorizontal, playerStart: { x: 19, y: 11 } },
       ],
       enemies: [],
-      items: [],
+      items: [
+        { item: ITEMS.food, icon: 'f', x: 11, y: 11 },
+        { item: ITEMS.food, icon: 'f', x: 11, y: 19 },
+      ],
     },
     [ROOM.B]: {
       layout: [13, 6, 17, 70],
@@ -137,7 +145,11 @@ function drawScreen() {
   drawRoom(GAME.board, ...GAME.map[GAME.currentRoom].layout);
   // ... print entities with `addToBoard`
   addToBoard(GAME.board, GAME.player, GAME.player.icon);
+  for (const item of GAME.map[GAME.currentRoom].items) {
+    addToBoard(GAME.board, item, item.icon);
+  }
   displayBoard(GAME.board);
+  showStats(GAME.player);
 }
 
 /**
@@ -194,6 +206,20 @@ function move(who, yDiff, xDiff) {
       }
     }
     console.log('leave Room');
+  } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'f') {
+    // get item
+    const itemList = GAME.map[GAME.currentRoom].items;
+    for (const index in itemList) {
+      if (who.y + yDiff === itemList[index].y && who.x + xDiff === itemList[index].x) {
+        getItem(itemList[index].item);
+        itemList.splice(Number(index), 1);
+      }
+    }
+    // removeFromBoard(GAME.board);
+    GAME.board[who.y][who.x] = c.emptySpace;
+    who.x += xDiff;
+    who.y += yDiff;
+    GAME.board[who.y][who.x] = who.icon;
   }
   // ... check if attack enemy
   // ... check if attack player
@@ -287,9 +313,49 @@ function drawRoom(board, topY, leftX, bottomY, rightX) {
  * @param {array} enemies info of all enemies in the current room
  */
 function showStats(player, enemies) {
-  const playerStats = ''; // ...
-  const enemyStats = ''; // ... concatenate them with a newline
+  const playerStats = `Health: ${player.health}\nAttack: ${player.attack}\nDefense: ${player.defense}`;
+  const enemyStats = '35'; // ... concatenate them with a newline
   _updateStats(playerStats, enemyStats);
+}
+
+function getItem(item) {
+  if (item.type === 'pickup') {
+    if (Object.keys(GAME.player.inventory).includes(item.name)) {
+      GAME.player.inventory[item.name] += 1;
+    } else {
+      GAME.player.inventory[item.name] = 1;
+    }
+    manageInventory();
+  } else {
+    useItem(item);
+  }
+  console.log(GAME.player.inventory);
+}
+
+function useItem(item) {
+  for (const effect of item.effects) {
+    GAME.player[effect[0]] += effect[1];
+  }
+}
+
+function manageInventory() {
+  const invBox = document.querySelector('#inventory');
+  while (invBox.lastElementChild) {
+    invBox.removeChild(invBox.lastElementChild);
+  }
+  for (const item of Object.entries(GAME.player.inventory)) {
+    const type = ITEMS[item[0]];
+    const p = document.createElement('p');
+    p.innerText = `${item[0]}: ${item[1]}`;
+    p.addEventListener('click', () => {
+      useItem(type);
+      drawScreen();
+      GAME.player.inventory[item[0]]--;
+      if (GAME.player.inventory[item[0]] === 0) delete GAME.player.inventory[item[0]];
+      manageInventory();
+    });
+    invBox.appendChild(p);
+  }
 }
 
 /**
@@ -327,6 +393,7 @@ let _keypressListener = null;
 function _start(moveCB) {
   const msgBox = document.getElementById('startBox');
   const endBox = document.getElementById('endBox');
+  const invBox = document.querySelector('#inventory');
   endBox.classList.add('is-hidden');
   GAME.player.name = document.getElementById('playerName').value;
   GAME.player.race = document.getElementById('playerRace').value;
@@ -354,6 +421,9 @@ function _start(moveCB) {
         yDiff = 0;
         xDiff = 1;
         break;
+      }
+      case 'i': {
+        invBox.classList.toggle('is-hidden');
       }
     }
     if (xDiff !== 0 || yDiff !== 0) {
