@@ -186,6 +186,8 @@ function move(who, yDiff, xDiff) {
     GAME.board[who.y + yDiff][who.x + xDiff] === c.gateVertical
   ) {
     // ... check if move to new room (`removeFromBoard`, `addToBoard`)
+    GAME.currentRoom = ROOM.B;
+    removeFromBoard(GAME.board, GAME.player);
     console.log('leave Room');
   }
   // ... check if attack enemy
@@ -223,7 +225,7 @@ function addToBoard(board, item, icon) {
  * @param {*} item anything with position data
  */
 function removeFromBoard(board, item) {
-  // ...
+  board[item.y][item.x] = c.emptySpace;
 }
 
 /**
