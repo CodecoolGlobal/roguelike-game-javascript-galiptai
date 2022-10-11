@@ -138,6 +138,7 @@ function drawScreen() {
   // ... use `drawRoom`
   drawRoom(GAME.board, ...GAME.map[GAME.currentRoom].layout);
   // ... print entities with `addToBoard`
+  addToBoard(GAME.board, GAME.player, GAME.player.icon);
   displayBoard(GAME.board);
 }
 
@@ -149,6 +150,7 @@ function drawScreen() {
  * @returns
  */
 function moveAll(yDiff, xDiff) {
+  move(GAME.player, yDiff, xDiff);
   // ... use `move` to move all entities
   // ... show statistics with `showStats`
   // ... reload screen with `drawScreen`
@@ -170,6 +172,9 @@ function moveAll(yDiff, xDiff) {
  * @returns
  */
 function move(who, yDiff, xDiff) {
+  who.x += xDiff;
+  who.y += yDiff;
+  GAME.board[who.y][who.x] = who.icon;
   // ... check if move to empty space
   // ... check if hit a wall
   // ... check if move to new room (`removeFromBoard`, `addToBoard`)
@@ -198,7 +203,7 @@ function hit(board, y, x) {
  * @param {string} icon icon to print on the screen
  */
 function addToBoard(board, item, icon) {
-  // ...
+  board[item.y][item.x] = icon;
 }
 
 /**
@@ -275,7 +280,6 @@ function showStats(player, enemies) {
  * @param {*} board the gameplay area
  */
 function _displayBoard(screen) {
-  console.log('sss');
   document.getElementById('screen').innerText = screen;
 }
 
