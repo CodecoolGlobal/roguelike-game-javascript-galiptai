@@ -71,7 +71,7 @@ body {
 #flexbox {
   display: grid;
   width: 100%;
-  grid-template-columns: auto auto;
+  grid-template-columns: 50% 50%;
   position: absolute;
   z-index: 1;
 }
@@ -90,8 +90,6 @@ body {
   padding-top: 3px;
   padding-bottom: 3px;
   padding-right: 5px;
-  
-  
 }
 
 #inventory>div {
@@ -113,13 +111,21 @@ body {
   /*to the js file, class: is-hidden should be removed*/
   display: flex;
   justify-self: end;
+  flex-flow: column wrap;
   color: white;
   border: 1px solid #27b432;
-  width: 250px;
+  width: 100%;
   height: fit-content;
+  min-height: 26px;
   max-height: 100px;
   padding-right: 5px;
   background-color: black;
+}
+
+#message-log>div {
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 2px;
 }
 
 img {

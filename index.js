@@ -3,7 +3,7 @@
  * Unchangable configuration variables
  */
 const c = Object.freeze({
-  emptySpace: '.',
+  emptySpace: ' ',
   wall: '#',
   enemy: 'X',
   gateHorizontal: '"',
@@ -41,7 +41,7 @@ function initPlayer(pname, prace) {
     ranged: 0,
     defense: 1,
     isPlayer: true,
-    inventory: {},
+    inventory: { potion: 0, key: 0, sword: 0, crossbow: 0, shield: 0 },
   };
 }
 
@@ -72,6 +72,24 @@ const ROOM = {
 const ENEMY = {
   RAT: 'r',
 };
+
+/**
+ *
+ * @param {string} message message to be logged to the site after action
+ */
+function messageLogger(message) {
+  const logBox = document.querySelector('#message-log');
+  const logDivArr = Array.from(document.querySelectorAll('#message-log>div'));
+  if (logDivArr.length === 0) {
+    logBox.classList.remove('is-hidden');
+  }
+  const elem = document.createElement('div');
+  elem.innerText = message;
+  if (logDivArr.length === 5) {
+    logBox.firstElementChild.remove();
+  }
+  logBox.appendChild(elem);
+}
 
 /**
  * Info of the enemies
@@ -229,13 +247,13 @@ function movePlayer(who, yDiff, xDiff) {
   ) {
     // get item
     if (GAME.board[who.y + yDiff][who.x + xDiff] === 'k') {
-      console.log('you cannot consume the key');
+      messageLogger('you cannot consume the key');
     } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'a') {
-      console.log('your armor is increased');
+      messageLogger('your armor is increased');
     } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 's') {
-      console.log('your melee damage is increased');
+      messageLogger('your melee damage is increased');
     } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'c') {
-      console.log('your ranged damage is increased');
+      messageLogger('your ranged damage is increased');
     }
     const itemList = GAME.map[GAME.currentRoom].items;
     for (const index in itemList) {
@@ -406,9 +424,9 @@ function showStats(player, enemies) {
 }
 
 function getItem(item) {
-  if ((item.type === 'pickup' || item.type === 'instant') && item.name != 'food') {
+  if ((item.type === 'pickup' || item.type === 'instant') && item.name !== 'food') {
     if (Object.keys(GAME.player.inventory).includes(item.name)) {
-      console.log(GAME.player.inventory);
+      //console.log(GAME.player.inventory);
       GAME.player.inventory[item.name] += 1;
     } else {
       GAME.player.inventory[item.name] = 1;
@@ -427,43 +445,33 @@ function useItem(item) {
 }
 
 function manageInventory() {
-  const invBox = document.querySelector('#inventory');
-  // while (invBox.lastElementChild) {
-  //   invBox.removeChild(invBox.lastElementChild);
-  // }
-  if (Object.keys(GAME.player.inventory).length) {
-    for (const item of Object.entries(GAME.player.inventory)) {
-      const type = ITEMS[item[0]];
-      const p = document.createElement('p');
-      p.innerText = `${item[0]}: ${item[1]}`;
-      p.addEventListener('click', () => {
-        useItem(type);
-        drawScreen();
-        console.log(ITEMS[item[0]]);
-        if (ITEMS[item[0]].name != 'key') {
-          GAME.player.inventory[item[0]]--;
-        }
-        if (GAME.player.inventory[item[0]] === 0) delete GAME.player.inventory[item[0]];
-        manageInventory();
-      });
-      invBox.appendChild(p);
+  const type = ITEMS[item[0]];
+  const p = document.createElement('p');
+  const inventoryBox = Array.from(document.querySelectorAll('#inventory>div'));
+  inventoryBox[0].id;
+  inventoryBox[type].innerText = `${item[0]}: ${item[1]}`;
+  p.addEventListener('click', () => {
+    useItem(type);
+    drawScreen();
+    //console.log(ITEMS[item[0]]);
+    if (ITEMS[item[0]].name != 'key') {
+      GAME.player.inventory[item[0]]--;
     }
-  } else {
-    const p = document.createElement('p');
-    p.innerText = 'No items';
-    invBox.appendChild(p);
-  }
+    if (GAME.player.inventory[item[0]] === 0) delete GAME.player.inventory[item[0]];
+    manageInventory();
+  });
+  //invBox.appendChild(p);
 }
 
 function attack(attacker, attackee, index) {
-  console.log(`${attacker.name} attacks ${attackee.name}!`);
+  messageLogger(`${attacker.name} attacks ${attackee.name}!`);
   const hitRoll = Math.floor(Math.random() * 10) + 1;
   if (hitRoll > attackee.defense) {
     const hit = attacker.attack * 10;
     attackee.health -= hit;
-    console.log(`${attacker.name} hit ${attackee.name} for ${hit} damage!`);
+    messageLogger(`${attacker.name} hit ${attackee.name} for ${hit} damage!`);
   } else {
-    console.log(`${attacker.name} missed!`);
+    messageLogger(`${attacker.name} missed!`);
   }
   if (attackee.health <= 0) {
     if (attackee === GAME.player) {
@@ -471,7 +479,7 @@ function attack(attacker, attackee, index) {
     } else {
       const enemyList = GAME.map[GAME.currentRoom].enemies;
       enemyList.splice(Number(index), 1);
-      console.log(`${attackee.name} is defeated!`);
+      messageLogger(`${attackee.name} is defeated!`);
     }
   }
 }
