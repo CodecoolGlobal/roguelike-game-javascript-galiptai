@@ -340,9 +340,9 @@ function useItem(item) {
 
 function manageInventory() {
   const invBox = document.querySelector('#inventory');
-  while (invBox.lastElementChild) {
-    invBox.removeChild(invBox.lastElementChild);
-  }
+  // while (invBox.lastElementChild) {
+  //   invBox.removeChild(invBox.lastElementChild);
+  // }
   if (Object.keys(GAME.player.inventory).length) {
     for (const item of Object.entries(GAME.player.inventory)) {
       const type = ITEMS[item[0]];
