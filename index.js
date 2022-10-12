@@ -343,17 +343,23 @@ function manageInventory() {
   while (invBox.lastElementChild) {
     invBox.removeChild(invBox.lastElementChild);
   }
-  for (const item of Object.entries(GAME.player.inventory)) {
-    const type = ITEMS[item[0]];
+  if (Object.keys(GAME.player.inventory).length) {
+    for (const item of Object.entries(GAME.player.inventory)) {
+      const type = ITEMS[item[0]];
+      const p = document.createElement('p');
+      p.innerText = `${item[0]}: ${item[1]}`;
+      p.addEventListener('click', () => {
+        useItem(type);
+        drawScreen();
+        GAME.player.inventory[item[0]]--;
+        if (GAME.player.inventory[item[0]] === 0) delete GAME.player.inventory[item[0]];
+        manageInventory();
+      });
+      invBox.appendChild(p);
+    }
+  } else {
     const p = document.createElement('p');
-    p.innerText = `${item[0]}: ${item[1]}`;
-    p.addEventListener('click', () => {
-      useItem(type);
-      drawScreen();
-      GAME.player.inventory[item[0]]--;
-      if (GAME.player.inventory[item[0]] === 0) delete GAME.player.inventory[item[0]];
-      manageInventory();
-    });
+    p.innerText = 'No items';
     invBox.appendChild(p);
   }
 }
@@ -432,6 +438,7 @@ function _start(moveCB) {
   };
   document.addEventListener('keypress', _keypressListener);
   drawScreen();
+  manageInventory();
 }
 
 /**
