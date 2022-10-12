@@ -29,13 +29,13 @@ let GAME = {
  * @param {string} race race of the player
  * @returns
  */
-function initPlayer(name, race) {
+function initPlayer(pname, prace) {
   return {
     x: 15,
     y: 15,
-    name: name,
+    name: pname,
     icon: '@',
-    race: race,
+    race: prace,
     health: 100,
     attack: 1,
     defense: 1,
@@ -69,14 +69,14 @@ const ROOM = {
  * Icon of the enemies
  */
 const ENEMY = {
-  // RAT: "r",
+  RAT: 'r',
 };
 
 /**
  * Info of the enemies
  */
 const ENEMY_INFO = {
-  // [ENEMY.RAT]: { health: 10, attack: 1, defense: 0, icon: ENEMY.RAT, race: "Rat", isBoss: false },
+  [ENEMY.RAT]: { health: 30, attack: 1, defense: 1, icon: ENEMY.RAT, race: 'Rat', isBoss: false, range: 5 },
 };
 
 const ITEMS = {
@@ -91,7 +91,6 @@ function init() {
   GAME.map = generateMap();
   GAME.board = createBoard(c.boardWidth, c.boardHeight, c.emptySpace);
   GAME.player = initPlayer('Legolas', 'Elf');
-  // drawScreen();
 }
 
 /**
@@ -116,7 +115,8 @@ function generateMap() {
       layout: [13, 6, 17, 70],
       gates: [{ to: ROOM.A, x: 6, y: 15, icon: c.gateVertical, playerStart: { x: 19, y: 15 } }],
       enemies: [
-        // { type: ENEMY.RAT, x: 25, y: 15, name: "Rattata", ...ENEMY_INFO[ENEMY.RAT] },
+        { type: ENEMY.RAT, x: 35, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
+        { type: ENEMY.RAT, x: 55, y: 14, name: 'The other', ...ENEMY_INFO[ENEMY.RAT] },
       ],
       items: [],
     },
@@ -148,8 +148,11 @@ function drawScreen() {
   for (const item of GAME.map[GAME.currentRoom].items) {
     addToBoard(GAME.board, item, item.icon);
   }
+  for (const enemy of GAME.map[GAME.currentRoom].enemies) {
+    addToBoard(GAME.board, enemy, enemy.icon);
+  }
   displayBoard(GAME.board);
-  showStats(GAME.player);
+  showStats(GAME.player, GAME.map[GAME.currentRoom].enemies);
 }
 
 /**
@@ -160,7 +163,11 @@ function drawScreen() {
  * @returns
  */
 function moveAll(yDiff, xDiff) {
-  move(GAME.player, yDiff, xDiff);
+  movePlayer(GAME.player, yDiff, xDiff);
+  drawScreen();
+  for (const enemy of GAME.map[GAME.currentRoom].enemies) {
+    moveEnemy(enemy);
+  }
   // ... use `move` to move all entities
   // ... show statistics with `showStats`
   // ... reload screen with `drawScreen`
@@ -181,13 +188,10 @@ function moveAll(yDiff, xDiff) {
  * @param {number} xDiff difference in X coord
  * @returns
  */
-function move(who, yDiff, xDiff) {
+function movePlayer(who, yDiff, xDiff) {
   // ... check if move to empty space
   if (GAME.board[who.y + yDiff][who.x + xDiff] === c.emptySpace) {
-    GAME.board[who.y][who.x] = c.emptySpace;
-    who.x += xDiff;
-    who.y += yDiff;
-    GAME.board[who.y][who.x] = who.icon;
+    move(who, yDiff, xDiff);
   } else if (GAME.board[who.y + yDiff][who.x + xDiff] === c.wall) {
     // ... check if hit a wall
     return;
@@ -195,7 +199,7 @@ function move(who, yDiff, xDiff) {
     GAME.board[who.y + yDiff][who.x + xDiff] === c.gateHorizontal ||
     GAME.board[who.y + yDiff][who.x + xDiff] === c.gateVertical
   ) {
-    // ... check if move to new room (`removeFromBoard`, `addToBoard`)
+    // ... check if move to new room
     for (const door of GAME.map[GAME.currentRoom].gates) {
       if (who.y + yDiff === door.y && who.x + xDiff === door.x) {
         GAME.currentRoom = door.to;
@@ -205,7 +209,6 @@ function move(who, yDiff, xDiff) {
         GAME.player.y = door.playerStart.y;
       }
     }
-    console.log('leave Room');
   } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'f') {
     // get item
     const itemList = GAME.map[GAME.currentRoom].items;
@@ -215,17 +218,73 @@ function move(who, yDiff, xDiff) {
         itemList.splice(Number(index), 1);
       }
     }
-    // removeFromBoard(GAME.board);
-    GAME.board[who.y][who.x] = c.emptySpace;
-    who.x += xDiff;
-    who.y += yDiff;
-    GAME.board[who.y][who.x] = who.icon;
+    move(who, yDiff, xDiff);
+  } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'r') {
+    const enemyList = GAME.map[GAME.currentRoom].enemies;
+    for (const index in enemyList) {
+      if (who.x + xDiff === enemyList[index].x && who.y + yDiff === enemyList[index].y) {
+        attack(GAME.player, enemyList[index], Number(index));
+      }
+    }
   }
-  // ... check if attack enemy
-  // ... check if attack player
   //     ... use `_gameOver()` if necessary
 }
 
+function moveEnemy(who) {
+  const yDist = who.y - GAME.player.y;
+  const xDist = who.x - GAME.player.x;
+  const distFromPlayer = Math.sqrt(Math.abs(yDist) ** 2 + Math.abs(xDist) ** 2);
+  if (distFromPlayer > who.range) {
+    switch (Math.floor(Math.random() * 4)) {
+      case 0:
+        if (GAME.board[who.y + 1][who.x] === c.emptySpace) move(who, 1, 0);
+        break;
+      case 1:
+        if (GAME.board[who.y - 1][who.x] === c.emptySpace) move(who, -1, 0);
+        break;
+      case 2:
+        if (GAME.board[who.y][who.x + 1] === c.emptySpace) move(who, 0, 1);
+        break;
+      case 3:
+        if (GAME.board[who.y][who.x - 1] === c.emptySpace) move(who, 0, -1);
+        break;
+    }
+  } else if (Math.abs(yDist) > 1 || Math.abs(xDist) > 1 || (Math.abs(xDist) === 1 && Math.abs(yDist) === 1)) {
+    if (Math.abs(yDist) > Math.abs(xDist)) {
+      if (yDist < 0) {
+        if (GAME.board[who.y + 1][who.x] === c.emptySpace) {
+          move(who, 1, 0);
+          return;
+        }
+      } else {
+        if (GAME.board[who.y - 1][who.x] === c.emptySpace) {
+          move(who, -1, 0);
+          return;
+        }
+      }
+    }
+    if (xDist < 0) {
+      if (GAME.board[who.y][who.x + 1] === c.emptySpace) {
+        move(who, 0, 1);
+        return;
+      }
+    } else {
+      if (GAME.board[who.y][who.x - 1] === c.emptySpace) {
+        move(who, 0, -1);
+        return;
+      }
+    }
+  } else {
+    attack(who, GAME.player);
+  }
+}
+
+function move(who, yDiff, xDiff) {
+  GAME.board[who.y][who.x] = c.emptySpace;
+  who.x += xDiff;
+  who.y += yDiff;
+  GAME.board[who.y][who.x] = who.icon;
+}
 /**
  * Check if the entity found anything actionable.
  *
@@ -303,7 +362,6 @@ function drawRoom(board, topY, leftX, bottomY, rightX) {
   }
   board[GAME.map[GAME.currentRoom].gates[0].y][GAME.map[GAME.currentRoom].gates[0].x] =
     GAME.map[GAME.currentRoom].gates[0].icon;
-  console.dir(board);
 }
 
 /**
@@ -314,7 +372,10 @@ function drawRoom(board, topY, leftX, bottomY, rightX) {
  */
 function showStats(player, enemies) {
   const playerStats = `Health: ${player.health}\nAttack: ${player.attack}\nDefense: ${player.defense}`;
-  const enemyStats = '35'; // ... concatenate them with a newline
+  let enemyStats = '';
+  for (const enemy of enemies) {
+    enemyStats = enemyStats.concat(`${enemy.name}: ${enemy.health}\n`);
+  }
   _updateStats(playerStats, enemyStats);
 }
 
@@ -364,6 +425,27 @@ function manageInventory() {
   }
 }
 
+function attack(attacker, attackee, index) {
+  console.log(`${attacker.name} attacks ${attackee.name}!`);
+  const hitRoll = Math.floor(Math.random() * 10) + 1;
+  if (hitRoll > attackee.defense) {
+    const hit = attacker.attack * 10;
+    attackee.health -= hit;
+    console.log(`${attacker.name} hit ${attackee.name} for ${hit} damage!`);
+  } else {
+    console.log(`${attacker.name} missed!`);
+  }
+  if (attackee.health <= 0) {
+    if (attackee === GAME.player) {
+      console.log('Game over !');
+    } else {
+      const enemyList = GAME.map[GAME.currentRoom].enemies;
+      enemyList.splice(Number(index), 1);
+      console.log(`${attackee.name} is defeated!`);
+    }
+  }
+}
+
 /**
  * Update the gameplay area in the DOM
  * @param {*} board the gameplay area
@@ -403,6 +485,20 @@ function _start(moveCB) {
   endBox.classList.add('is-hidden');
   GAME.player.name = document.getElementById('playerName').value;
   GAME.player.race = document.getElementById('playerRace').value;
+  switch (GAME.player.race) {
+    case 'Elf':
+      GAME.player.defense = 2;
+      if (GAME.player.name === '') GAME.player.name = 'Legolas';
+      break;
+    case 'Dwarf':
+      GAME.player.attack = 2;
+      if (GAME.player.name === '') GAME.player.name = 'Gimli';
+      break;
+    case 'Human':
+      GAME.player.health = 120;
+      if (GAME.player.name === '') GAME.player.name = 'Aragorn';
+      break;
+  }
   msgBox.classList.toggle('is-hidden');
   _keypressListener = (e) => {
     let xDiff = 0;
