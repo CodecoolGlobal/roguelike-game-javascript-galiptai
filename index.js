@@ -38,6 +38,7 @@ function initPlayer(name, race) {
     race: race,
     health: 100,
     attack: 1,
+    ranged: 0,
     defense: 1,
     isPlayer: true,
     inventory: {},
@@ -80,7 +81,12 @@ const ENEMY_INFO = {
 };
 
 const ITEMS = {
-  food: { name: 'food', type: 'pickup', effects: [['health', 10]] },
+  food: { name: 'food', type: 'instant', effects: [['health', 10]]},
+  armor: { name: 'armor', type: 'instant', effects: [['defense', 1]]},
+  crossbow: { name: 'crossbow', type: 'instant', effects: [['ranged', 2]], ammo: 'infinite'},
+  sword: { name: 'sword', type: 'instant', effects: [['attack', 3]]},
+  key: { name: 'key', type: 'pickup', effects: 'open'},
+  potion: { name: 'potion', type: 'pickup', effects: [['health', 50]]},
 };
 
 /**
@@ -102,7 +108,7 @@ function generateMap() {
     [ROOM.A]: {
       layout: [10, 10, 20, 20],
       gates: [
-        { to: ROOM.B, x: 20, y: 15, icon: c.gateVertical, playerStart: { x: 7, y: 15 } },
+        {to: ROOM.B, x: 20, y: 15, icon: c.gateVertical, playerStart: { x: 7, y: 15 }},
         // { to: ROOM.B, x: 10, y: 18, icon: c.gateVertical, playerStart: { x: 19, y: 11 } },
         // { to: ROOM.B, x: 13, y: 20, icon: c.gateHorizontal, playerStart: { x: 19, y: 11 } },
       ],
@@ -110,6 +116,10 @@ function generateMap() {
       items: [
         { item: ITEMS.food, icon: 'f', x: 11, y: 11 },
         { item: ITEMS.food, icon: 'f', x: 11, y: 19 },
+        { item: ITEMS.armor, icon: 'a', x: 14, y: 15 },
+        { item: ITEMS.sword, icon: 's', x: 13, y: 15 },
+        { item: ITEMS.crossbow, icon: 'c', x: 12, y: 15 },
+        { item: ITEMS.key, icon: 'k', x: 11, y: 15 },
       ],
     },
     [ROOM.B]: {
@@ -206,8 +216,21 @@ function move(who, yDiff, xDiff) {
       }
     }
     console.log('leave Room');
-  } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'f') {
+  } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'f' || 
+             GAME.board[who.y + yDiff][who.x + xDiff] === 'a' || 
+             GAME.board[who.y + yDiff][who.x + xDiff] === 'c' || 
+             GAME.board[who.y + yDiff][who.x + xDiff] === 's' || 
+             GAME.board[who.y + yDiff][who.x + xDiff] === 'k') {
     // get item
+    if(GAME.board[who.y + yDiff][who.x + xDiff] === 'k') {
+      console.log('you cannot consume the key')
+    } else if(GAME.board[who.y + yDiff][who.x + xDiff] === 'a') {
+      console.log('your armor is increased')
+    } else if(GAME.board[who.y + yDiff][who.x + xDiff] === 's') {
+      console.log('your melee damage is increased')
+    } else if(GAME.board[who.y + yDiff][who.x + xDiff] === 'c') {
+      console.log('your ranged damage is increased')
+    }
     const itemList = GAME.map[GAME.currentRoom].items;
     for (const index in itemList) {
       if (who.y + yDiff === itemList[index].y && who.x + xDiff === itemList[index].x) {
@@ -303,7 +326,7 @@ function drawRoom(board, topY, leftX, bottomY, rightX) {
   }
   board[GAME.map[GAME.currentRoom].gates[0].y][GAME.map[GAME.currentRoom].gates[0].x] =
     GAME.map[GAME.currentRoom].gates[0].icon;
-  console.dir(board);
+  //console.dir(board);
 }
 
 /**
@@ -313,14 +336,15 @@ function drawRoom(board, topY, leftX, bottomY, rightX) {
  * @param {array} enemies info of all enemies in the current room
  */
 function showStats(player, enemies) {
-  const playerStats = `Health: ${player.health}\nAttack: ${player.attack}\nDefense: ${player.defense}`;
+  const playerStats = `Health: ${player.health}\nAttack: ${player.attack}\nDefense: ${player.defense}\nRanged: ${player.ranged}`;
   const enemyStats = '35'; // ... concatenate them with a newline
   _updateStats(playerStats, enemyStats);
 }
 
 function getItem(item) {
-  if (item.type === 'pickup') {
+  if ((item.type === 'pickup' || item.type === 'instant') && item.name != 'food') {
     if (Object.keys(GAME.player.inventory).includes(item.name)) {
+      console.log(GAME.player.inventory)
       GAME.player.inventory[item.name] += 1;
     } else {
       GAME.player.inventory[item.name] = 1;
@@ -329,7 +353,7 @@ function getItem(item) {
   } else {
     useItem(item);
   }
-  console.log(GAME.player.inventory);
+  //console.log(GAME.player.inventory);
 }
 
 function useItem(item) {
@@ -351,7 +375,10 @@ function manageInventory() {
       p.addEventListener('click', () => {
         useItem(type);
         drawScreen();
-        GAME.player.inventory[item[0]]--;
+        console.log(ITEMS[item[0]])
+        if(ITEMS[item[0]].name != 'key'){
+          GAME.player.inventory[item[0]]--;
+        }
         if (GAME.player.inventory[item[0]] === 0) delete GAME.player.inventory[item[0]];
         manageInventory();
       });
@@ -438,7 +465,15 @@ function _start(moveCB) {
   };
   document.addEventListener('keypress', _keypressListener);
   drawScreen();
+  for (const item of Object.keys(ITEMS)) {
+    if(item == 'food') {
+      continue
+    } else {
+      GAME.player.inventory[item]= 0
+    }
+  }
   manageInventory();
+  console.log(GAME.player.inventory)
 }
 
 /**
