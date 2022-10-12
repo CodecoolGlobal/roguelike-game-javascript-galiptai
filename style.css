@@ -65,15 +65,42 @@ body {
 }
 
 .is-hidden {
-  display: none;
+  visibility: hidden;
+}
+
+#flexbox {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto auto;
+  position: absolute;
+  z-index: 1;
 }
 
 #inventory {
-  position: absolute;
-  z-index: 1;
+  display: flex;
+  justify-self: start;
   color: white;
   border: 1px solid #27b432;
   width: 150px;
   height: 40px;
   padding-left: 5px;
+  background-color: black;
+  justify-self: start;
+  
 }
+
+#message-log {
+  /*to the js file, class: is-hidden should be removed*/
+  display: flex;
+  justify-self: end;
+  color: white;
+  border: 1px solid #27b432;
+  width: 250px;
+  height: fit-content;
+  max-height: 100px;
+  padding-right: 5px;
+  background-color: black;
+}
+
+
+

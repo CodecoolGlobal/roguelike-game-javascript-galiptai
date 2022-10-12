@@ -3,7 +3,7 @@
  * Unchangable configuration variables
  */
 const c = Object.freeze({
-  emptySpace: ' ',
+  emptySpace: '.',
   wall: '#',
   enemy: 'X',
   gateHorizontal: '"',
