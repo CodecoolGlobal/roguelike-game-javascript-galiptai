@@ -115,6 +115,8 @@ const ITEMS = {
   potion: { name: 'potion', type: 'pickup', effects: [['health', 50]], passive: false },
 };
 
+const PROJECTILES = [];
+
 /**
  * Initialize the play area with starting conditions
  */
@@ -275,14 +277,13 @@ function movePlayer(who, yDiff, xDiff) {
       messageLogger('your melee damage is increased');
     } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'c') {
       messageLogger('your ranged damage is increased');
-    }  else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'p') {
+    } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'p') {
       messageLogger('You picked up a potion');
     }
     const itemList = GAME.map[GAME.currentRoom].items;
     for (const index in itemList) {
       if (who.y + yDiff === itemList[index].y && who.x + xDiff === itemList[index].x) {
         getItem(itemList[index].item);
-        console.log(itemList[index].item)
         itemList.splice(Number(index), 1);
       }
     }
@@ -552,9 +553,8 @@ function manageInventory(item) {
   const inventoryBox = Array.from(document.querySelectorAll('#inventory>div'));
   for (const i of inventoryBox) {
     if (i.id === item) {
-      //console.log(i.lastElementChild.innerText);
-      i.lastElementChild.innerHTML = Number(i.lastElementChild.textContent)+ 1;
-    } 
+      i.lastElementChild.innerHTML = Number(i.lastElementChild.textContent) + 1;
+    }
   }
   /*
    if (i.id == 'potion') {
@@ -600,6 +600,42 @@ function attack(attacker, attackee, index) {
       messageLogger(`${attackee.name} is defeated!`);
     }
   }
+}
+
+/**
+ * @param {string} direction ArrowRight ArrowUp ArrowDown ArrowLeft
+ * @param {int} shooterX x position to count from depending on direction
+ * @param {int} shooterY y position to count from depending on direction
+ * @param {*} shooterRangeDamage the damage the projectile should deal when hit
+ * @param {bool} isBoss def value false, if boss shoots, should be true
+ */
+function shoot(direction, shooterX, shooterY, shooterRangeDamage, isBoss = false) {
+  let startCoordinateX;
+  let startCoordinateY;
+  let icon;
+  switch (direction) {
+    case 'ArrowRight':
+      startCoordinateX = shooterX + 1;
+      startCoordinateY = shooterY;
+      icon = '-';
+      break;
+    case 'ArrowUp':
+      startCoordinateX = shooterX;
+      startCoordinateY = shooterY - 1;
+      icon = '|';
+      break;
+    case 'ArrowDown':
+      startCoordinateX = shooterX;
+      startCoordinateY = shooterY + 1;
+      icon = '|';
+      break;
+    case 'ArrowLeft':
+      startCoordinateX = shooterX - 1;
+      startCoordinateY = shooterY;
+      icon = '-';
+      break;
+  }
+  PROJECTILES.push({ icon: icon, damage: shooterRangeDamage, x: startCoordinateX, y: startCoordinateY });
 }
 
 /**
@@ -685,14 +721,31 @@ function _start(moveCB) {
         break;
       }
       case 'p': {
-        if(GAME.player.inventory.potion > 0) {
-          useItem(ITEMS.potion)
+        if (GAME.player.inventory.potion > 0) {
+          useItem(ITEMS.potion);
           drawScreen();
-          document.getElementById('potion').lastElementChild.innerHTML -= 1
-          GAME.player.inventory.potion -= 1 
+          document.getElementById('potion').lastElementChild.innerHTML -= 1;
+          GAME.player.inventory.potion -= 1;
           messageLogger('Your health is increased by 50');
-          console.log(GAME.player.inventory.potion)
+          console.log(GAME.player.inventory.potion);
         }
+        break;
+      }
+      case 'ArrowUp': {
+        //shoot bullet up
+        break;
+      }
+      case 'ArrowDown': {
+        //shoot bullet down
+        break;
+      }
+      case 'ArrowRight': {
+        //shoot bullet right
+        break;
+      }
+      case 'ArrowLeft': {
+        //shoot bullet left
+        break;
       }
     }
     if (xDiff !== 0 || yDiff !== 0) {
