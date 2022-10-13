@@ -71,6 +71,13 @@ const ROOM = {
  */
 const ENEMY = {
   RAT: 'r',
+  DALEK: [
+    ['O', 'O', '|', 'O', 'O'],
+    ['O', 'O', '|', 'O', 'O'],
+    ['-', '-', 'X', '-', '-'],
+    ['O', 'O', '|', 'O', 'O'],
+    ['O', 'O', '|', 'O', 'O'],
+  ],
 };
 
 /**
@@ -96,6 +103,7 @@ function messageLogger(message) {
  */
 const ENEMY_INFO = {
   [ENEMY.RAT]: { health: 30, attack: 1, defense: 1, icon: ENEMY.RAT, race: 'Rat', isBoss: false, range: 5 },
+  [ENEMY.DALEK]: { health: 80, attack: 3, defense: 2, icon: ENEMY.DALEK, race: 'Dalek', isBoss: true, range: Infinity },
 };
 
 const ITEMS = {
@@ -141,11 +149,20 @@ function generateMap() {
     },
     [ROOM.B]: {
       layout: [13, 6, 17, 70],
-      gates: [{ to: ROOM.A, x: 6, y: 15, icon: c.gateVertical, playerStart: { x: 19, y: 15 } }],
+      gates: [
+        { to: ROOM.A, x: 6, y: 15, icon: c.gateVertical, playerStart: { x: 19, y: 15 } },
+        { to: ROOM.D, x: 70, y: 15, icon: c.gateVertical, playerStart: { x: 12, y: 15 } },
+      ],
       enemies: [
         { type: ENEMY.RAT, x: 35, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
         { type: ENEMY.RAT, x: 55, y: 14, name: 'Patkányka', ...ENEMY_INFO[ENEMY.RAT] },
       ],
+      items: [],
+    },
+    [ROOM.D]: {
+      layout: [8, 11, 22, 72],
+      gates: [{ to: ROOM.B, x: 11, y: 15, icon: c.gateVertical, playerStart: { x: 69, y: 15 } }],
+      enemies: [{ type: ENEMY.DALEK, x: 60, y: 15, name: 'Dalek Caan', ...ENEMY_INFO[ENEMY.DALEK] }],
       items: [],
     },
   };
@@ -194,7 +211,8 @@ function moveAll(yDiff, xDiff) {
   movePlayer(GAME.player, yDiff, xDiff);
   drawScreen();
   for (const enemy of GAME.map[GAME.currentRoom].enemies) {
-    moveEnemy(enemy);
+    if (!enemy.isBoss) moveEnemy(enemy);
+    else moveBoss(enemy);
   }
   // ... use `move` to move all entities
   // ... show statistics with `showStats`
@@ -323,11 +341,67 @@ function moveEnemy(who) {
   }
 }
 
+function moveBoss(who) {
+  if (
+    ((GAME.player.y === who.y - 3 || GAME.player.y === who.y + 3) &&
+      GAME.player.x > who.x - 3 &&
+      GAME.player.x < who.x + 3) ||
+    ((GAME.player.x === who.x - 3 || GAME.player.x === who.x + 3) &&
+      GAME.player.y > who.y - 3 &&
+      GAME.player.y < who.y + 3)
+  ) {
+    attack(who, GAME.player);
+    return;
+  } else if (GAME.player.y === who.y || GAME.player.x === who.x) {
+    console.log('shoot');
+    return;
+  }
+  const yDist = who.y - GAME.player.y;
+  const xDist = who.x - GAME.player.x;
+  const canMoveVerticalToShoot = !(
+    GAME.player.y <= GAME.map[GAME.currentRoom].layout[0] + 2 ||
+    GAME.player.y >= GAME.map[GAME.currentRoom].layout[2] - 2
+  );
+  const canMoveHorizontalToShoot = !(
+    GAME.player.x <= GAME.map[GAME.currentRoom].layout[1] + 2 ||
+    GAME.player.x >= GAME.map[GAME.currentRoom].layout[3] - 2
+  );
+  if (Math.abs(yDist) <= Math.abs(xDist) && canMoveVerticalToShoot) {
+    console.log('1');
+    const value = yDist > 0 ? -1 : 1;
+    move(who, value, 0);
+  } else if (Math.abs(xDist) <= Math.abs(yDist) && canMoveHorizontalToShoot) {
+    console.log('2');
+    const value = xDist > 0 ? -1 : 1;
+    move(who, 0, value);
+  } else if (canMoveVerticalToShoot) {
+    console.log('3');
+    const value = yDist > 0 ? -1 : 1;
+    move(who, value, 0);
+  } else if (canMoveHorizontalToShoot) {
+    console.log('4');
+    const value = xDist > 0 ? -1 : 1;
+    move(who, 0, value);
+  } else if (
+    Math.abs(yDist) <= Math.abs(xDist) &&
+    who.y - 3 > GAME.map[GAME.currentRoom].layout[0] &&
+    who.y + 3 < GAME.map[GAME.currentRoom].layout[2]
+  ) {
+    console.log('5');
+    const value = yDist > 0 ? -1 : 1;
+    move(who, value, 0);
+  } else {
+    console.log('6');
+    const value = xDist > 0 ? -1 : 1;
+    move(who, 0, value);
+  }
+}
+
 function move(who, yDiff, xDiff) {
-  GAME.board[who.y][who.x] = c.emptySpace;
+  removeFromBoard(GAME.board, who);
   who.x += xDiff;
   who.y += yDiff;
-  GAME.board[who.y][who.x] = who.icon;
+  addToBoard(GAME.board, who, who.icon);
 }
 /**
  * Check if the entity found anything actionable.
@@ -349,7 +423,19 @@ function hit(board, y, x) {
  * @param {string} icon icon to print on the screen
  */
 function addToBoard(board, item, icon) {
-  board[item.y][item.x] = icon;
+  if (typeof item.icon === 'string') {
+    board[item.y][item.x] = icon;
+  } else {
+    const height = icon.length;
+    const width = icon[0].length;
+    const startY = item.y - Math.floor(height / 2);
+    const startX = item.x - Math.floor(height / 2);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        board[startY + y][startX + x] = icon[y][x];
+      }
+    }
+  }
 }
 
 /**
@@ -359,7 +445,19 @@ function addToBoard(board, item, icon) {
  * @param {*} item anything with position data
  */
 function removeFromBoard(board, item) {
-  board[item.y][item.x] = c.emptySpace;
+  if (typeof item.icon === 'string') {
+    board[item.y][item.x] = c.emptySpace;
+  } else {
+    const height = item.icon.length;
+    const width = item.icon[0].length;
+    const startY = item.y - Math.floor(height / 2);
+    const startX = item.x - Math.floor(height / 2);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        board[startY + y][startX + x] = c.emptySpace;
+      }
+    }
+  }
 }
 
 /**
@@ -404,8 +502,10 @@ function drawRoom(board, topY, leftX, bottomY, rightX) {
       }
     }
   }
-  board[GAME.map[GAME.currentRoom].gates[0].y][GAME.map[GAME.currentRoom].gates[0].x] =
-    GAME.map[GAME.currentRoom].gates[0].icon;
+  const gateList = GAME.map[GAME.currentRoom].gates;
+  for (const gate of gateList) {
+    board[gate.y][gate.x] = gate.icon;
+  }
 }
 
 /**
