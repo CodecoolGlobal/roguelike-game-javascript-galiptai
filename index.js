@@ -32,7 +32,7 @@ let GAME = {
 function initPlayer(pname, prace) {
   return {
     x: 15,
-    y: 15,
+    y: 18,
     name: pname,
     icon: '@',
     race: prace,
@@ -102,17 +102,18 @@ function messageLogger(message) {
  * Info of the enemies
  */
 const ENEMY_INFO = {
-  [ENEMY.RAT]: { health: 30, attack: 1, defense: 1, icon: ENEMY.RAT, race: 'Rat', isBoss: false, range: 5 },
+  [ENEMY.RAT]: { health: 30, attack: 1, defense: 1, icon: ENEMY.RAT, race: 'Rat', isBoss: false, range: 5, fields: [] },
   [ENEMY.DALEK]: {
-    health: 80,
+    health: 150,
     attack: 3,
     defense: 2,
-    ranged: 1,
+    ranged: 2,
     icon: ENEMY.DALEK,
     race: 'Dalek',
     isBoss: true,
     range: Infinity,
     shoot: false,
+    fields: [],
   },
 };
 
@@ -159,7 +160,7 @@ function generateMap() {
         { to: ROOM.C, x: 35, y: 13, icon: c.gateHorizontal, playerStart: { x: 35, y: 19 }, needKey: false },
         { to: ROOM.D, x: 70, y: 15, icon: c.gateVertical, playerStart: { x: 12, y: 15 }, needKey: true },
       ],
-      enemies: [{ type: ENEMY.RAT, x: 15, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] }],
+      enemies: [{ type: ENEMY.RAT, x: 30, y: 14, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] }],
       items: [
         { item: ITEMS.food, icon: 'f', x: 35, y: 16 },
         { item: ITEMS.potion, icon: 'p', x: 68, y: 15 },
@@ -169,14 +170,14 @@ function generateMap() {
       layout: [10, 25, 20, 45],
       gates: [{ to: ROOM.B, x: 35, y: 20, icon: c.gateHorizontal, playerStart: { x: 35, y: 14 }, needKey: false }],
       enemies: [
-        { type: ENEMY.RAT, x: 37, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
-        { type: ENEMY.RAT, x: 32, y: 18, name: 'Patkányka', ...ENEMY_INFO[ENEMY.RAT] },
+        { type: ENEMY.RAT, x: 40, y: 16, name: 'Mr. Patkányka', ...ENEMY_INFO[ENEMY.RAT] },
+        { type: ENEMY.RAT, x: 33, y: 13, name: 'Mrs. Patkányka', ...ENEMY_INFO[ENEMY.RAT] },
       ],
       items: [
-        { item: ITEMS.armor, icon: 'a', x: 26, y: 15 },
+        { item: ITEMS.armor, icon: 'a', x: 30, y: 15 },
         { item: ITEMS.sword, icon: 's', x: 28, y: 18 },
-        { item: ITEMS.crossbow, icon: 'c', x: 40, y: 16 },
-        { item: ITEMS.key, icon: 'k', x: 30, y: 17 },
+        { item: ITEMS.crossbow, icon: 'c', x: 43, y: 12 },
+        { item: ITEMS.key, icon: 'k', x: 29, y: 13 },
       ],
     },
 
@@ -184,7 +185,7 @@ function generateMap() {
       layout: [8, 11, 22, 72],
       gates: [{ to: ROOM.B, x: 11, y: 15, icon: c.gateVertical, playerStart: { x: 69, y: 15 }, needKey: false }],
       enemies: [{ type: ENEMY.DALEK, x: 60, y: 15, name: 'Dalek Caan', ...ENEMY_INFO[ENEMY.DALEK] }],
-      items: [{ item: ITEMS.potion, icon: 'p', x: 64, y: 15 }],
+      items: [{ item: ITEMS.potion, icon: 'p', x: 65, y: 15 }],
     },
   };
 }
@@ -231,16 +232,23 @@ function drawScreen() {
  * @param {*} xDiff
  * @returns
  */
-function moveAll(yDiff, xDiff) {
-  movePlayer(GAME.player, yDiff, xDiff);
+function moveAll(yDiff, xDiff, fired) {
+  movePlayer(GAME.player, yDiff, xDiff, fired);
   drawScreen();
   console.log(PROJECTILES);
-  for (const projectile of PROJECTILES) {
-    moveProjectile(projectile);
+  let removedProjectiles = []
+  for (const index in PROJECTILES) {
+    moveProjectile(PROJECTILES[index], removedProjectiles, Number(index));
   }
+  removedProjectiles = removedProjectiles.reverse();
+  console.log(removedProjectiles);
+  for (const projectileIndex of removedProjectiles) {
+    PROJECTILES.splice(projectileIndex, 1);
+  }
+  drawScreen();
   for (const enemy of GAME.map[GAME.currentRoom].enemies) {
-    if (!enemy.isBoss) moveEnemy(enemy);
-    else moveBoss(enemy);
+    if (enemy.isBoss) moveBoss(enemy);
+    else moveEnemy(enemy);
   }
   // ... use `move` to move all entities
   // ... show statistics with `showStats`
@@ -262,16 +270,21 @@ function moveAll(yDiff, xDiff) {
  * @param {number} xDiff difference in X coord
  * @returns
  */
-function movePlayer(who, yDiff, xDiff) {
+function movePlayer(who, yDiff, xDiff, fired) {
+  if (fired) {
+    shoot(fired, who.x, who.y, who);
+    return;
+  }
+  const nextField = GAME.board[who.y + yDiff][who.x + xDiff];
   // ... check if move to empty space
-  if (GAME.board[who.y + yDiff][who.x + xDiff] === c.emptySpace) {
+  if (nextField === c.emptySpace) {
     move(who, yDiff, xDiff);
-  } else if (GAME.board[who.y + yDiff][who.x + xDiff] === c.wall) {
+  } else if (nextField === c.wall) {
     // ... check if hit a wall
     return;
   } else if (
-    GAME.board[who.y + yDiff][who.x + xDiff] === c.gateHorizontal ||
-    GAME.board[who.y + yDiff][who.x + xDiff] === c.gateVertical
+    nextField === c.gateHorizontal ||
+    nextField === c.gateVertical
   ) {
     // ... check if move to new room
     for (const door of GAME.map[GAME.currentRoom].gates) {
@@ -279,7 +292,7 @@ function movePlayer(who, yDiff, xDiff) {
         if (door.needKey) {
           if (GAME.player.inventory['key'] === 0) {
             messageLogger('You need a key!');
-            continue;
+            return;
           }
         }
         GAME.currentRoom = door.to;
@@ -289,42 +302,31 @@ function movePlayer(who, yDiff, xDiff) {
         GAME.player.y = door.playerStart.y;
       }
     }
+    PROJECTILES.length = 0;
     console.log('leave Room');
   } else if (
-    GAME.board[who.y + yDiff][who.x + xDiff] === 'f' ||
-    GAME.board[who.y + yDiff][who.x + xDiff] === 'a' ||
-    GAME.board[who.y + yDiff][who.x + xDiff] === 'c' ||
-    GAME.board[who.y + yDiff][who.x + xDiff] === 's' ||
-    GAME.board[who.y + yDiff][who.x + xDiff] === 'k' ||
-    GAME.board[who.y + yDiff][who.x + xDiff] === 'p'
+    'facksp'.includes(nextField)
   ) {
     // get item
-    if (GAME.board[who.y + yDiff][who.x + xDiff] === 'k') {
+    if (nextField === 'k') {
       messageLogger('You picked up a key');
-    } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'a') {
-      messageLogger('your armor is increased');
-    } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 's') {
-      messageLogger('your melee damage is increased');
-    } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'c') {
-      messageLogger('your ranged damage is increased');
-    } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'p') {
+    } else if (nextField === 'a') {
+      messageLogger('Your armor is increased by 1');
+    } else if (nextField === 's') {
+      messageLogger('Your melee damage is increased by 3');
+    } else if (nextField === 'c') {
+      messageLogger('You found a crossbow');
+    } else if (nextField === 'p') {
       messageLogger('You picked up a potion');
     }
     const itemList = GAME.map[GAME.currentRoom].items;
-    for (const index in itemList) {
-      if (who.y + yDiff === itemList[index].y && who.x + xDiff === itemList[index].x) {
-        getItem(itemList[index].item);
-        itemList.splice(Number(index), 1);
-      }
-    }
+    const index = getIndexFromList(itemList, who.x + xDiff, who.y + yDiff);
+    getItem(itemList[index].item);
+    itemList.splice(index, 1);
     move(who, yDiff, xDiff);
-  } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'r') {
-    const enemyList = GAME.map[GAME.currentRoom].enemies;
-    for (const index in enemyList) {
-      if (who.x + xDiff === enemyList[index].x && who.y + yDiff === enemyList[index].y) {
-        attack(GAME.player, enemyList[index], Number(index));
-      }
-    }
+  } else if (Object.values(ENEMY).flat(Infinity).includes(nextField)) {
+    const target = findTarget(who.y + yDiff, who.x + xDiff);
+    attack(who, target);
   }
   //     ... use `_gameOver()` if necessary
 }
@@ -378,7 +380,7 @@ function moveEnemy(who) {
   }
 }
 
-function getFromList(list, x, y) {
+function getIndexFromList(list, x, y) {
   for (const index in list) {
     if (y === list[index].y && x === list[index].x) {
       return Number(index);
@@ -400,10 +402,10 @@ function moveBoss(who) {
     return;
   }
   if (who.shoot) {
-    shoot('ArrowLeft', who.x - 2, who.y, who);
-    shoot('ArrowRight', who.x + 2, who.y, who);
-    shoot('ArrowUp', who.x, who.y - 2, who);
-    shoot('ArrowDown', who.x, who.y + 2, who);
+    shoot('left', who.x - 2, who.y, who);
+    shoot('right', who.x + 2, who.y, who);
+    shoot('up', who.x, who.y - 2, who);
+    shoot('down', who.x, who.y + 2, who);
     who.shoot = false;
     return;
   } else if (GAME.player.y === who.y || GAME.player.x === who.x) {
@@ -452,19 +454,21 @@ function moveBoss(who) {
   who.shoot = true;
 }
 
-function moveProjectile(projectile) {
-  console.log(projectile);
+function moveProjectile(projectile, removed, index) {
   const nextField = GAME.board[projectile.y + projectile.direction[0]][projectile.x + projectile.direction[1]];
   console.log(nextField);
   if (nextField === c.emptySpace) {
     move(projectile, projectile.direction[0], projectile.direction[1]);
     return;
   } else if (nextField === GAME.player.icon) {
+    ('attack');
     attack(projectile, GAME.player);
   } else if (Object.values(ENEMY).flat(Infinity).includes(nextField)) {
-    console.log('attack something');
+    const target = findTarget(projectile.y + projectile.direction[0], projectile.x + projectile.direction[1]);
+    attack(projectile, target);
   }
-  PROJECTILES.splice(getFromList(PROJECTILES, projectile.x, projectile.y), 1);
+  removeFromBoard(GAME.board, projectile);
+  removed.push(index);
 }
 
 function move(who, yDiff, xDiff) {
@@ -473,16 +477,15 @@ function move(who, yDiff, xDiff) {
   who.y += yDiff;
   addToBoard(GAME.board, who, who.icon);
 }
-/**
- * Check if the entity found anything actionable.
- *
- * @param {*} board the gameplay area
- * @param {*} y Y position on the board
- * @param {*} x X position on the board
- * @returns boolean if found anything relevant
- */
-function hit(board, y, x) {
-  // ...
+
+function findTarget(y, x) {
+  for (const enemy of GAME.map[GAME.currentRoom].enemies) {
+    for (const field of enemy.fields) {
+      if (field[0] === y && field[1] === x) {
+        return enemy;
+      }
+    }
+  }
 }
 
 /**
@@ -494,15 +497,19 @@ function hit(board, y, x) {
  */
 function addToBoard(board, item, icon) {
   if (typeof item.icon === 'string') {
+    item.fields = []
     board[item.y][item.x] = icon;
+    item.fields.push([item.y, item.x]);
   } else {
     const height = icon.length;
     const width = icon[0].length;
     const startY = item.y - Math.floor(height / 2);
     const startX = item.x - Math.floor(height / 2);
+    item.fields = []
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         board[startY + y][startX + x] = icon[y][x];
+        item.fields.push([startY + y, startX + x]);
       }
     }
   }
@@ -644,7 +651,7 @@ function manageInventory(item) {
   //invBox.appendChild(p);*/
 }
 
-function attack(attacker, attackee, index) {
+function attack(attacker, attackee) {
   messageLogger(`${attacker.name} attacks ${attackee.name}!`);
   const hitRoll = Math.floor(Math.random() * 10) + 1;
   if (hitRoll > attackee.defense) {
@@ -657,11 +664,14 @@ function attack(attacker, attackee, index) {
   if (attackee.health <= 0) {
     if (attackee === GAME.player) {
       console.log('Game over !');
-      _gameOver();
+      _gameOver(attacker.name);
     } else {
       const enemyList = GAME.map[GAME.currentRoom].enemies;
-      enemyList.splice(Number(index), 1);
+      enemyList.splice(getIndexFromList(enemyList, attackee.x, attackee.y), 1);
       messageLogger(`${attackee.name} is defeated!`);
+      if (attackee.isBoss) {
+        _gameOver(GAME.player.name);
+      }
     }
   }
 }
@@ -671,33 +681,31 @@ function attack(attacker, attackee, index) {
  * @param {int} shooterX x position to count from depending on direction
  * @param {int} shooterY y position to count from depending on direction
  * @param {*} shooterRangeDamage the damage the projectile should deal when hit
- * @param {bool} isBoss def value false, if boss shoots, should be true
  */
-function shoot(direction, shooterX, shooterY, shooter, isBoss = false) {
-  console.log(shooterX);
+function shoot(direction, shooterX, shooterY, shooter,) {
   let startCoordinateX;
   let startCoordinateY;
   let icon;
   switch (direction) {
-    case 'ArrowRight':
+    case 'right':
       startCoordinateX = shooterX + 1;
       startCoordinateY = shooterY;
       icon = '>';
       direction = DIRECTIONS.right;
       break;
-    case 'ArrowUp':
+    case 'up':
       startCoordinateX = shooterX;
       startCoordinateY = shooterY - 1;
       icon = 'Ʌ';
       direction = DIRECTIONS.up;
       break;
-    case 'ArrowDown':
+    case 'down':
       startCoordinateX = shooterX;
       startCoordinateY = shooterY + 1;
       icon = 'V';
       direction = DIRECTIONS.down;
       break;
-    case 'ArrowLeft':
+    case 'left':
       startCoordinateX = shooterX - 1;
       startCoordinateY = shooterY;
       icon = '<';
@@ -706,6 +714,7 @@ function shoot(direction, shooterX, shooterY, shooter, isBoss = false) {
   }
   if (GAME.board[startCoordinateY][startCoordinateX] === c.emptySpace) {
     PROJECTILES.push({
+      id: PROJECTILES.length,
       name: shooter.name,
       direction: direction,
       icon: icon,
@@ -773,6 +782,8 @@ function _start(moveCB) {
   _keypressListener = (e) => {
     let xDiff = 0;
     let yDiff = 0;
+    let fired = '';
+    console.log(e.key.toLocaleLowerCase());
     switch (e.key.toLocaleLowerCase()) {
       case 'w': {
         yDiff = -1;
@@ -809,37 +820,38 @@ function _start(moveCB) {
         }
         break;
       }
-      case 'ArrowUp': {
-        //shoot bullet up
+      case 'arrowup': {
+        fired = 'up'
         break;
       }
-      case 'ArrowDown': {
-        //shoot bullet down
+      case 'arrowdown': {
+        fired = 'down'
         break;
       }
-      case 'ArrowRight': {
-        //shoot bullet right
+      case 'arrowright': {
+        fired = 'right';
         break;
       }
-      case 'ArrowLeft': {
-        //shoot bullet left
+      case 'arrowleft': {
+        fired = 'left';
+        console.log(fired);
         break;
       }
     }
-    if (xDiff !== 0 || yDiff !== 0) {
-      moveCB(yDiff, xDiff);
+    if (xDiff !== 0 || yDiff !== 0 || (fired && GAME.player.inventory.crossbow > 0)) {
+      moveCB(yDiff, xDiff, fired);
     }
   };
-  document.addEventListener('keypress', _keypressListener);
+  document.addEventListener('keydown', _keypressListener);
   drawScreen();
-  for (const item of Object.keys(ITEMS)) {
+  /* for (const item of Object.keys(ITEMS)) {
     if (item == 'food') {
       continue;
     } else {
       GAME.player.inventory[item] = 0;
     }
   }
-  manageInventory();
+  manageInventory(); */
 }
 
 /**
@@ -847,16 +859,21 @@ function _start(moveCB) {
  *
  * Makes sure that the proper boxes are visible.
  */
-function _gameOver() {
+function _gameOver(winner) {
   // const msgBox = document.getElementById('startBox');
   // msgBox.classList.add('is-hidden');
   // const endBox = document.getElementById('endBox');
   // endBox.classList.remove('is-hidden');
   const logBox = document.querySelector('#message-log');
-  messageLogger('GAME OVER, DALEK CAAN DEFEATED YOU!');
-  logBox.lastElementChild.classList.add('red');
+  if (winner === GAME.player.name) {
+    messageLogger(`${winner.toUpperCase()} IS VICTORIOUS!`);
+    logBox.lastElementChild.classList.add('green');
+  } else {
+    messageLogger(`GAME OVER, ${winner.toUpperCase()} DEFEATED YOU!`);
+    logBox.lastElementChild.classList.add('red');
+  }
   if (_keypressListener) {
-    document.removeEventListener('keypress', _keypressListener);
+    document.removeEventListener('keydown', _keypressListener);
   }
 }
 

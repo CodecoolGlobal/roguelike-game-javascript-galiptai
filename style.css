@@ -90,7 +90,7 @@ body {
   padding-right: 5px;
 }
 
-#inventory>div {
+#inventory > div {
   padding: auto;
   margin-top: 2px;
   margin-bottom: 2px;
@@ -101,7 +101,7 @@ body {
   flex-flow: row wrap;
 }
 
-#inventory>div>div {
+#inventory > div > div {
   color: white;
 }
 
@@ -121,7 +121,7 @@ body {
   background-color: black;
 }
 
-#message-log>div {
+#message-log > div {
   padding-left: 5px;
   padding-right: 5px;
   margin: 2px;
@@ -137,5 +137,6 @@ img {
 .red {
   color: red !important;
 }
-
-
+.green {
+  color: rgb(45, 223, 0) !important;
+}
