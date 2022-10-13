@@ -135,39 +135,58 @@ function generateMap() {
     [ROOM.A]: {
       layout: [10, 10, 20, 20],
       gates: [
-        { to: ROOM.B, x: 20, y: 15, icon: c.gateVertical, playerStart: { x: 7, y: 15 } },
+        { to: ROOM.B, x: 20, y: 15, icon: c.gateVertical, playerStart: { x: 7, y: 15 }, needKey: false },
         // { to: ROOM.B, x: 10, y: 18, icon: c.gateVertical, playerStart: { x: 19, y: 11 } },
         // { to: ROOM.B, x: 13, y: 20, icon: c.gateHorizontal, playerStart: { x: 19, y: 11 } },
       ],
       enemies: [],
       items: [
-        { item: ITEMS.food, icon: 'f', x: 11, y: 11 },
-        { item: ITEMS.food, icon: 'f', x: 11, y: 19 },
-        { item: ITEMS.armor, icon: 'a', x: 14, y: 15 },
-        { item: ITEMS.sword, icon: 's', x: 13, y: 15 },
-        { item: ITEMS.crossbow, icon: 'c', x: 12, y: 15 },
-        { item: ITEMS.key, icon: 'k', x: 11, y: 15 },
-        { item: ITEMS.potion, icon: 'p', x: 16, y: 15 },
-        { item: ITEMS.potion, icon: 'p', x: 17, y: 15 },
+        { item: ITEMS.food, icon: 'f', x: 16, y: 15 },
+        
       ],
     },
     [ROOM.B]: {
       layout: [13, 6, 17, 70],
       gates: [
-        { to: ROOM.A, x: 6, y: 15, icon: c.gateVertical, playerStart: { x: 19, y: 15 } },
-        { to: ROOM.D, x: 70, y: 15, icon: c.gateVertical, playerStart: { x: 12, y: 15 } },
+        { to: ROOM.A, x: 6, y: 15, icon: c.gateVertical, playerStart: { x: 19, y: 15 }, needKey: false },
+        { to: ROOM.C, x: 35, y: 13, icon: c.gateHorizontal, playerStart: { x: 35, y: 19 }, needKey: false },
+        { to: ROOM.D, x: 70, y: 15, icon: c.gateVertical, playerStart: { x: 12, y: 15 }, needKey: true },
       ],
       enemies: [
-        { type: ENEMY.RAT, x: 35, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
-        { type: ENEMY.RAT, x: 55, y: 14, name: 'Patkányka', ...ENEMY_INFO[ENEMY.RAT] },
+        { type: ENEMY.RAT, x: 15, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
+        
       ],
-      items: [],
+      items: [
+        { item: ITEMS.food, icon: 'f', x: 35, y: 16 },
+        { item: ITEMS.potion, icon: 'p', x: 68, y: 15 },
+      ],
     },
+    [ROOM.C]: {
+      layout: [10, 25, 20, 45],
+      gates: [
+        { to: ROOM.B, x: 35, y: 20, icon: c.gateHorizontal, playerStart: { x: 35, y: 14 }, needKey: false }
+      ],
+      enemies: [
+        { type: ENEMY.RAT, x: 37, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
+        { type: ENEMY.RAT, x: 32, y: 18, name: 'Patkányka', ...ENEMY_INFO[ENEMY.RAT] },
+      ],
+      items: [
+        
+        { item: ITEMS.armor, icon: 'a', x: 26, y: 15 },
+        { item: ITEMS.sword, icon: 's', x: 28, y: 18 },
+        { item: ITEMS.crossbow, icon: 'c', x: 40, y: 16 },
+        { item: ITEMS.key, icon: 'k', x: 30, y: 17 },
+      ],
+    },
+
     [ROOM.D]: {
       layout: [8, 11, 22, 72],
-      gates: [{ to: ROOM.B, x: 11, y: 15, icon: c.gateVertical, playerStart: { x: 69, y: 15 } }],
+      gates: [{ to: ROOM.B, x: 11, y: 15, icon: c.gateVertical, playerStart: { x: 69, y: 15 }, needKey: false }],
       enemies: [{ type: ENEMY.DALEK, x: 60, y: 15, name: 'Dalek Caan', ...ENEMY_INFO[ENEMY.DALEK] }],
-      items: [],
+      items: [
+        { item: ITEMS.potion, icon: 'p', x: 64, y: 15 },
+        
+      ],
     },
   };
 }
@@ -251,7 +270,14 @@ function movePlayer(who, yDiff, xDiff) {
   ) {
     // ... check if move to new room
     for (const door of GAME.map[GAME.currentRoom].gates) {
+
       if (who.y + yDiff === door.y && who.x + xDiff === door.x) {
+        if (door.needKey) {
+          if (GAME.player.inventory['key']===0) {
+            messageLogger('You need a key!');
+            continue;
+          }
+        }
         GAME.currentRoom = door.to;
         removeFromBoard(GAME.board, GAME.player);
         addToBoard(GAME.board, door.playerStart, GAME.player.icon);
@@ -594,6 +620,7 @@ function attack(attacker, attackee, index) {
   if (attackee.health <= 0) {
     if (attackee === GAME.player) {
       console.log('Game over !');
+      _gameOver();
     } else {
       const enemyList = GAME.map[GAME.currentRoom].enemies;
       enemyList.splice(Number(index), 1);
@@ -672,9 +699,9 @@ let _keypressListener = null;
  */
 function _start(moveCB) {
   const msgBox = document.getElementById('startBox');
-  const endBox = document.getElementById('endBox');
+  //const endBox = document.getElementById('endBox');
   const invBox = document.querySelector('#inventory');
-  endBox.classList.add('is-hidden');
+  //endBox.classList.add('is-hidden');
   GAME.player.name = document.getElementById('playerName').value;
   GAME.player.race = document.getElementById('playerRace').value;
   switch (GAME.player.race) {
@@ -770,10 +797,13 @@ function _start(moveCB) {
  * Makes sure that the proper boxes are visible.
  */
 function _gameOver() {
-  const msgBox = document.getElementById('startBox');
-  msgBox.classList.add('is-hidden');
-  const endBox = document.getElementById('endBox');
-  endBox.classList.remove('is-hidden');
+  // const msgBox = document.getElementById('startBox');
+  // msgBox.classList.add('is-hidden');
+  // const endBox = document.getElementById('endBox');
+  // endBox.classList.remove('is-hidden');
+  const logBox =document.querySelector('#message-log');
+  messageLogger('GAME OVER, DALEK CAAN DEFEATED YOU!');
+  logBox.lastElementChild.classList.add('red');
   if (_keypressListener) {
     document.removeEventListener('keypress', _keypressListener);
   }

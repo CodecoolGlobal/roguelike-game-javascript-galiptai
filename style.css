@@ -52,7 +52,6 @@ body {
   bottom: 0;
   left: 0;
   color: turquoise;
-  opacity: 0.5;
   margin: 10px;
 }
 #enemyStats {
@@ -60,7 +59,6 @@ body {
   bottom: 0;
   right: 0;
   color: red;
-  opacity: 0.5;
   margin: 10px;
 }
 
@@ -119,6 +117,7 @@ body {
   min-height: 26px;
   max-height: 100px;
   padding-right: 5px;
+  padding-bottom: 3px;
   background-color: black;
 }
 
@@ -133,6 +132,10 @@ img {
   padding: auto;
   width: 16px;
   height: 16px;
+}
+
+.red {
+  color: red !important;
 }
 
 
