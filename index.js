@@ -137,6 +137,8 @@ function generateMap() {
         { item: ITEMS.sword, icon: 's', x: 13, y: 15 },
         { item: ITEMS.crossbow, icon: 'c', x: 12, y: 15 },
         { item: ITEMS.key, icon: 'k', x: 11, y: 15 },
+        { item: ITEMS.potion, icon: 'p', x: 16, y: 15 },
+        { item: ITEMS.potion, icon: 'p', x: 17, y: 15 },
       ],
     },
     [ROOM.B]: {
@@ -243,7 +245,8 @@ function movePlayer(who, yDiff, xDiff) {
     GAME.board[who.y + yDiff][who.x + xDiff] === 'a' ||
     GAME.board[who.y + yDiff][who.x + xDiff] === 'c' ||
     GAME.board[who.y + yDiff][who.x + xDiff] === 's' ||
-    GAME.board[who.y + yDiff][who.x + xDiff] === 'k'
+    GAME.board[who.y + yDiff][who.x + xDiff] === 'k' ||
+    GAME.board[who.y + yDiff][who.x + xDiff] === 'p'
   ) {
     // get item
     if (GAME.board[who.y + yDiff][who.x + xDiff] === 'k') {
@@ -254,11 +257,14 @@ function movePlayer(who, yDiff, xDiff) {
       messageLogger('your melee damage is increased');
     } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'c') {
       messageLogger('your ranged damage is increased');
+    }  else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'p') {
+      messageLogger('You picked up a potion');
     }
     const itemList = GAME.map[GAME.currentRoom].items;
     for (const index in itemList) {
       if (who.y + yDiff === itemList[index].y && who.x + xDiff === itemList[index].x) {
         getItem(itemList[index].item);
+        console.log(itemList[index].item)
         itemList.splice(Number(index), 1);
       }
     }
@@ -426,6 +432,7 @@ function showStats(player, enemies) {
 function getItem(item) {
   if (item.type === 'instant') {
     useItem(item);
+    messageLogger('Your health is increased by 10');
   } else {
     GAME.player.inventory[item.name] += 1;
     manageInventory(item.name);
@@ -444,14 +451,21 @@ function manageInventory(item) {
   const type = ITEMS[item];
   const inventoryBox = Array.from(document.querySelectorAll('#inventory>div'));
   for (const i of inventoryBox) {
-    console.log(i.id);
-    console.log(item);
     if (i.id === item) {
-      i.lastElementChild.innerText = Number(i.lastElementChild.innerText) + 1;
-      console.log(i.lastElementChild.innerText);
-    }
+      //console.log(i.lastElementChild.innerText);
+      i.lastElementChild.innerHTML = Number(i.lastElementChild.textContent)+ 1;
+    } 
   }
   /*
+   if (i.id == 'potion') {
+      i.addEventListener('keypress', () => {
+        useItem(type);
+        drawScreen();
+        //console.log(ITEMS[item[0]]);
+        i.lastElementChild.innerText = Number(i.lastElementChild.innerText) - 1;
+        manageInventory();
+      })
+    }
   inventoryBox.id;
   inventoryBox[type].innerText = `${item[0]}: ${item[1]}`;
   p.addEventListener('click', () => {
@@ -568,6 +582,17 @@ function _start(moveCB) {
       }
       case 'i': {
         invBox.classList.toggle('is-hidden');
+        break;
+      }
+      case 'p': {
+        if(GAME.player.inventory.potion > 0) {
+          useItem(ITEMS.potion)
+          drawScreen();
+          document.getElementById('potion').lastElementChild.innerHTML -= 1
+          GAME.player.inventory.potion -= 1 
+          messageLogger('Your health is increased by 50');
+          console.log(GAME.player.inventory.potion)
+        }
       }
     }
     if (xDiff !== 0 || yDiff !== 0) {
@@ -584,7 +609,6 @@ function _start(moveCB) {
     }
   }
   manageInventory();
-  console.log(GAME.player.inventory);
 }
 
 /**
