@@ -48,12 +48,12 @@ function initPlayer(pname, prace) {
 /**
  * List of the 4 main directions
  */
-const DIRECTIONS = [
-  [-1, 0],
-  [1, 0],
-  [0, -1],
-  [0, 1],
-];
+const DIRECTIONS = {
+  up: [-1, 0],
+  down: [1, 0],
+  left: [0, -1],
+  right: [0, 1],
+};
 
 /**
  * Enum for the rooms
@@ -103,7 +103,17 @@ function messageLogger(message) {
  */
 const ENEMY_INFO = {
   [ENEMY.RAT]: { health: 30, attack: 1, defense: 1, icon: ENEMY.RAT, race: 'Rat', isBoss: false, range: 5 },
-  [ENEMY.DALEK]: { health: 80, attack: 3, defense: 2, icon: ENEMY.DALEK, race: 'Dalek', isBoss: true, range: Infinity },
+  [ENEMY.DALEK]: {
+    health: 80,
+    attack: 3,
+    defense: 2,
+    ranged: 1,
+    icon: ENEMY.DALEK,
+    race: 'Dalek',
+    isBoss: true,
+    range: Infinity,
+    shoot: false,
+  },
 };
 
 const ITEMS = {
@@ -140,10 +150,7 @@ function generateMap() {
         // { to: ROOM.B, x: 13, y: 20, icon: c.gateHorizontal, playerStart: { x: 19, y: 11 } },
       ],
       enemies: [],
-      items: [
-        { item: ITEMS.food, icon: 'f', x: 16, y: 15 },
-        
-      ],
+      items: [{ item: ITEMS.food, icon: 'f', x: 16, y: 15 }],
     },
     [ROOM.B]: {
       layout: [13, 6, 17, 70],
@@ -152,10 +159,7 @@ function generateMap() {
         { to: ROOM.C, x: 35, y: 13, icon: c.gateHorizontal, playerStart: { x: 35, y: 19 }, needKey: false },
         { to: ROOM.D, x: 70, y: 15, icon: c.gateVertical, playerStart: { x: 12, y: 15 }, needKey: true },
       ],
-      enemies: [
-        { type: ENEMY.RAT, x: 15, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
-        
-      ],
+      enemies: [{ type: ENEMY.RAT, x: 15, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] }],
       items: [
         { item: ITEMS.food, icon: 'f', x: 35, y: 16 },
         { item: ITEMS.potion, icon: 'p', x: 68, y: 15 },
@@ -163,15 +167,12 @@ function generateMap() {
     },
     [ROOM.C]: {
       layout: [10, 25, 20, 45],
-      gates: [
-        { to: ROOM.B, x: 35, y: 20, icon: c.gateHorizontal, playerStart: { x: 35, y: 14 }, needKey: false }
-      ],
+      gates: [{ to: ROOM.B, x: 35, y: 20, icon: c.gateHorizontal, playerStart: { x: 35, y: 14 }, needKey: false }],
       enemies: [
         { type: ENEMY.RAT, x: 37, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
         { type: ENEMY.RAT, x: 32, y: 18, name: 'Patkányka', ...ENEMY_INFO[ENEMY.RAT] },
       ],
       items: [
-        
         { item: ITEMS.armor, icon: 'a', x: 26, y: 15 },
         { item: ITEMS.sword, icon: 's', x: 28, y: 18 },
         { item: ITEMS.crossbow, icon: 'c', x: 40, y: 16 },
@@ -183,10 +184,7 @@ function generateMap() {
       layout: [8, 11, 22, 72],
       gates: [{ to: ROOM.B, x: 11, y: 15, icon: c.gateVertical, playerStart: { x: 69, y: 15 }, needKey: false }],
       enemies: [{ type: ENEMY.DALEK, x: 60, y: 15, name: 'Dalek Caan', ...ENEMY_INFO[ENEMY.DALEK] }],
-      items: [
-        { item: ITEMS.potion, icon: 'p', x: 64, y: 15 },
-        
-      ],
+      items: [{ item: ITEMS.potion, icon: 'p', x: 64, y: 15 }],
     },
   };
 }
@@ -219,6 +217,9 @@ function drawScreen() {
   for (const enemy of GAME.map[GAME.currentRoom].enemies) {
     addToBoard(GAME.board, enemy, enemy.icon);
   }
+  for (const projectile of PROJECTILES) {
+    addToBoard(GAME.board, projectile, projectile.icon);
+  }
   displayBoard(GAME.board);
   showStats(GAME.player, GAME.map[GAME.currentRoom].enemies);
 }
@@ -233,6 +234,10 @@ function drawScreen() {
 function moveAll(yDiff, xDiff) {
   movePlayer(GAME.player, yDiff, xDiff);
   drawScreen();
+  console.log(PROJECTILES);
+  for (const projectile of PROJECTILES) {
+    moveProjectile(projectile);
+  }
   for (const enemy of GAME.map[GAME.currentRoom].enemies) {
     if (!enemy.isBoss) moveEnemy(enemy);
     else moveBoss(enemy);
@@ -270,10 +275,9 @@ function movePlayer(who, yDiff, xDiff) {
   ) {
     // ... check if move to new room
     for (const door of GAME.map[GAME.currentRoom].gates) {
-
       if (who.y + yDiff === door.y && who.x + xDiff === door.x) {
         if (door.needKey) {
-          if (GAME.player.inventory['key']===0) {
+          if (GAME.player.inventory['key'] === 0) {
             messageLogger('You need a key!');
             continue;
           }
@@ -374,6 +378,14 @@ function moveEnemy(who) {
   }
 }
 
+function getFromList(list, x, y) {
+  for (const index in list) {
+    if (y === list[index].y && x === list[index].x) {
+      return Number(index);
+    }
+  }
+}
+
 function moveBoss(who) {
   if (
     ((GAME.player.y === who.y - 3 || GAME.player.y === who.y + 3) &&
@@ -384,9 +396,18 @@ function moveBoss(who) {
       GAME.player.y < who.y + 3)
   ) {
     attack(who, GAME.player);
+    who.shoot = true;
+    return;
+  }
+  if (who.shoot) {
+    shoot('ArrowLeft', who.x - 2, who.y, who);
+    shoot('ArrowRight', who.x + 2, who.y, who);
+    shoot('ArrowUp', who.x, who.y - 2, who);
+    shoot('ArrowDown', who.x, who.y + 2, who);
+    who.shoot = false;
     return;
   } else if (GAME.player.y === who.y || GAME.player.x === who.x) {
-    console.log('shoot');
+    who.shoot = true;
     return;
   }
   const yDist = who.y - GAME.player.y;
@@ -428,6 +449,22 @@ function moveBoss(who) {
     const value = xDist > 0 ? -1 : 1;
     move(who, 0, value);
   }
+  who.shoot = true;
+}
+
+function moveProjectile(projectile) {
+  console.log(projectile);
+  const nextField = GAME.board[projectile.y + projectile.direction[0]][projectile.x + projectile.direction[1]];
+  console.log(nextField);
+  if (nextField === c.emptySpace) {
+    move(projectile, projectile.direction[0], projectile.direction[1]);
+    return;
+  } else if (nextField === GAME.player.icon) {
+    attack(projectile, GAME.player);
+  } else if (Object.values(ENEMY).flat(Infinity).includes(nextField)) {
+    console.log('attack something');
+  }
+  PROJECTILES.splice(getFromList(PROJECTILES, projectile.x, projectile.y), 1);
 }
 
 function move(who, yDiff, xDiff) {
@@ -636,7 +673,8 @@ function attack(attacker, attackee, index) {
  * @param {*} shooterRangeDamage the damage the projectile should deal when hit
  * @param {bool} isBoss def value false, if boss shoots, should be true
  */
-function shoot(direction, shooterX, shooterY, shooterRangeDamage, isBoss = false) {
+function shoot(direction, shooterX, shooterY, shooter, isBoss = false) {
+  console.log(shooterX);
   let startCoordinateX;
   let startCoordinateY;
   let icon;
@@ -644,25 +682,38 @@ function shoot(direction, shooterX, shooterY, shooterRangeDamage, isBoss = false
     case 'ArrowRight':
       startCoordinateX = shooterX + 1;
       startCoordinateY = shooterY;
-      icon = '-';
+      icon = '>';
+      direction = DIRECTIONS.right;
       break;
     case 'ArrowUp':
       startCoordinateX = shooterX;
       startCoordinateY = shooterY - 1;
-      icon = '|';
+      icon = 'Ʌ';
+      direction = DIRECTIONS.up;
       break;
     case 'ArrowDown':
       startCoordinateX = shooterX;
       startCoordinateY = shooterY + 1;
-      icon = '|';
+      icon = 'V';
+      direction = DIRECTIONS.down;
       break;
     case 'ArrowLeft':
       startCoordinateX = shooterX - 1;
       startCoordinateY = shooterY;
-      icon = '-';
+      icon = '<';
+      direction = DIRECTIONS.left;
       break;
   }
-  PROJECTILES.push({ icon: icon, damage: shooterRangeDamage, x: startCoordinateX, y: startCoordinateY });
+  if (GAME.board[startCoordinateY][startCoordinateX] === c.emptySpace) {
+    PROJECTILES.push({
+      name: shooter.name,
+      direction: direction,
+      icon: icon,
+      attack: shooter.ranged,
+      x: startCoordinateX,
+      y: startCoordinateY,
+    });
+  }
 }
 
 /**
@@ -801,7 +852,7 @@ function _gameOver() {
   // msgBox.classList.add('is-hidden');
   // const endBox = document.getElementById('endBox');
   // endBox.classList.remove('is-hidden');
-  const logBox =document.querySelector('#message-log');
+  const logBox = document.querySelector('#message-log');
   messageLogger('GAME OVER, DALEK CAAN DEFEATED YOU!');
   logBox.lastElementChild.classList.add('red');
   if (_keypressListener) {
