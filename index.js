@@ -100,11 +100,11 @@ const ENEMY_INFO = {
 
 const ITEMS = {
   food: { name: 'food', type: 'instant', effects: [['health', 10]] },
-  armor: { name: 'armor', type: 'instant', effects: [['defense', 1]] },
-  crossbow: { name: 'crossbow', type: 'instant', effects: [['ranged', 2]], ammo: 'infinite' },
-  sword: { name: 'sword', type: 'instant', effects: [['attack', 3]] },
-  key: { name: 'key', type: 'pickup', effects: 'open' },
-  potion: { name: 'potion', type: 'pickup', effects: [['health', 50]] },
+  armor: { name: 'armor', type: 'pickup', effects: [['defense', 1]], passive: true },
+  crossbow: { name: 'crossbow', type: 'pickup', effects: [['ranged', 2]], passive: true /*ammo: 'infinite'*/ },
+  sword: { name: 'sword', type: 'pickup', effects: [['attack', 3]], passive: true },
+  key: { name: 'key', type: 'pickup', effects: 'open', passive: false },
+  potion: { name: 'potion', type: 'pickup', effects: [['health', 50]], passive: false },
 };
 
 /**
@@ -144,7 +144,7 @@ function generateMap() {
       gates: [{ to: ROOM.A, x: 6, y: 15, icon: c.gateVertical, playerStart: { x: 19, y: 15 } }],
       enemies: [
         { type: ENEMY.RAT, x: 35, y: 16, name: 'Rattata', ...ENEMY_INFO[ENEMY.RAT] },
-        { type: ENEMY.RAT, x: 55, y: 14, name: 'The other', ...ENEMY_INFO[ENEMY.RAT] },
+        { type: ENEMY.RAT, x: 55, y: 14, name: 'Patkányka', ...ENEMY_INFO[ENEMY.RAT] },
       ],
       items: [],
     },
@@ -247,7 +247,7 @@ function movePlayer(who, yDiff, xDiff) {
   ) {
     // get item
     if (GAME.board[who.y + yDiff][who.x + xDiff] === 'k') {
-      messageLogger('you cannot consume the key');
+      messageLogger('You picked up a key');
     } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 'a') {
       messageLogger('your armor is increased');
     } else if (GAME.board[who.y + yDiff][who.x + xDiff] === 's') {
@@ -424,31 +424,35 @@ function showStats(player, enemies) {
 }
 
 function getItem(item) {
-  if ((item.type === 'pickup' || item.type === 'instant') && item.name !== 'food') {
-    if (Object.keys(GAME.player.inventory).includes(item.name)) {
-      //console.log(GAME.player.inventory);
-      GAME.player.inventory[item.name] += 1;
-    } else {
-      GAME.player.inventory[item.name] = 1;
-    }
-    manageInventory();
-  } else {
+  if (item.type === 'instant') {
     useItem(item);
+  } else {
+    GAME.player.inventory[item.name] += 1;
+    manageInventory(item.name);
+    if (item.passive) {
+      useItem(item);
+    }
   }
-  //console.log(GAME.player.inventory);
 }
-
 function useItem(item) {
   for (const effect of item.effects) {
     GAME.player[effect[0]] += effect[1];
   }
 }
 
-function manageInventory() {
-  const type = ITEMS[item[0]];
-  const p = document.createElement('p');
+function manageInventory(item) {
+  const type = ITEMS[item];
   const inventoryBox = Array.from(document.querySelectorAll('#inventory>div'));
-  inventoryBox[0].id;
+  for (const i of inventoryBox) {
+    console.log(i.id);
+    console.log(item);
+    if (i.id === item) {
+      i.lastElementChild.innerText = Number(i.lastElementChild.innerText) + 1;
+      console.log(i.lastElementChild.innerText);
+    }
+  }
+  /*
+  inventoryBox.id;
   inventoryBox[type].innerText = `${item[0]}: ${item[1]}`;
   p.addEventListener('click', () => {
     useItem(type);
@@ -460,7 +464,7 @@ function manageInventory() {
     if (GAME.player.inventory[item[0]] === 0) delete GAME.player.inventory[item[0]];
     manageInventory();
   });
-  //invBox.appendChild(p);
+  //invBox.appendChild(p);*/
 }
 
 function attack(attacker, attackee, index) {

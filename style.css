@@ -111,7 +111,7 @@ body {
   /*to the js file, class: is-hidden should be removed*/
   display: flex;
   justify-self: end;
-  flex-flow: column wrap;
+  flex-flow: column;
   color: white;
   border: 1px solid #27b432;
   width: 100%;
