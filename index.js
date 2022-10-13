@@ -107,6 +107,8 @@ const ITEMS = {
   potion: { name: 'potion', type: 'pickup', effects: [['health', 50]], passive: false },
 };
 
+const PROJECTILES = [];
+
 /**
  * Initialize the play area with starting conditions
  */
@@ -489,6 +491,42 @@ function attack(attacker, attackee, index) {
 }
 
 /**
+ * @param {string} direction ArrowRight ArrowUp ArrowDown ArrowLeft
+ * @param {int} shooterX x position to count from depending on direction
+ * @param {int} shooterY y position to count from depending on direction
+ * @param {*} shooterRangeDamage the damage the projectile should deal when hit
+ * @param {bool} isBoss def value false, if boss shoots, should be true
+ */
+function shoot(direction, shooterX, shooterY, shooterRangeDamage, isBoss = false) {
+  let startCoordinateX;
+  let startCoordinateY;
+  let icon;
+  switch (direction) {
+    case 'ArrowRight':
+      startCoordinateX = shooterX + 1;
+      startCoordinateY = shooterY;
+      icon = '-';
+      break;
+    case 'ArrowUp':
+      startCoordinateX = shooterX;
+      startCoordinateY = shooterY - 1;
+      icon = '|';
+      break;
+    case 'ArrowDown':
+      startCoordinateX = shooterX;
+      startCoordinateY = shooterY + 1;
+      icon = '|';
+      break;
+    case 'ArrowLeft':
+      startCoordinateX = shooterX - 1;
+      startCoordinateY = shooterY;
+      icon = '-';
+      break;
+  }
+  PROJECTILES.push({ icon: icon, damage: shooterRangeDamage, x: startCoordinateX, y: startCoordinateY });
+}
+
+/**
  * Update the gameplay area in the DOM
  * @param {*} board the gameplay area
  */
@@ -568,6 +606,27 @@ function _start(moveCB) {
       }
       case 'i': {
         invBox.classList.toggle('is-hidden');
+        break;
+      }
+      case 'p': {
+        //TO BE WRITTEN - drink potion
+        break;
+      }
+      case 'ArrowUp': {
+        //shoot bullet up
+        break;
+      }
+      case 'ArrowDown': {
+        //shoot bullet down
+        break;
+      }
+      case 'ArrowRight': {
+        //shoot bullet right
+        break;
+      }
+      case 'ArrowLeft': {
+        //shoot bullet left
+        break;
       }
     }
     if (xDiff !== 0 || yDiff !== 0) {
