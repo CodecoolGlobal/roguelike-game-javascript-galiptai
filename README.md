@@ -1,1 +1,11 @@
-# roguelike-game
+Porg Basics - Roguelike game
+
+Javascript based browser game, the player is controlled with the keyboard on a 2D
+maze, fighting against smart and randomly moving enemies that bite and shoot.
+
+---
+
+To run the application:
+
+- clone the repository and be sure to be on "development" branch
+- open the index.html file in your browser
