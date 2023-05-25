@@ -9,3 +9,12 @@ To run the application:
 
 - clone the repository and be sure to be on "development" branch
 - open the index.html file in your browser
+
+--- 
+
+controls:
+- move around with WASD
+- open inventory with i
+- shoot after picking up the crossbow with arrow keys
+
+
